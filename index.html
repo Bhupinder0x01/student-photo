@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Photo Desk</title>
+<style>
+:root{--navy:#16213a;--ink:#1c2433;--muted:#667085;--line:#dde1e7;--bg:#f1f3f6;--panel:#fff;--pri:#2456a6;--pri-d:#1b4585;--ok:#17803d;--bad:#c62828;--warn:#b7791f;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:14px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+
+/* header */
+.top{background:var(--navy);color:#fff;display:flex;align-items:center;gap:24px;padding:0 20px;height:56px;position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mono{width:32px;height:32px;border-radius:6px;background:#e8ecf4;color:var(--navy);font-weight:700;display:grid;place-items:center;font-size:14px;flex:none}
+.brand b{display:block;font-size:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+.brand small{display:block;color:#9fb0cf;font-size:12px;line-height:1.2}
+.top nav{display:flex;height:100%;margin-left:12px}
+.top nav a{display:flex;align-items:center;gap:6px;padding:0 16px;color:#b9c6df;text-decoration:none;font-weight:600;border-bottom:3px solid transparent}
+.top nav a:hover{color:#fff}
+.top nav a.on{color:#fff;border-color:#7fa8ee}
+.top svg{width:15px;height:15px}
+.conn{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#c9d4ea;white-space:nowrap}
+.conn i{width:8px;height:8px;border-radius:50%;background:#7b8799}
+.conn.ok i{background:#3fd07a}.conn.bad i{background:#ff6b6b}.conn.wait i{background:#f0b43c}
+
+/* shared widgets */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.panel>.hd{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.panel>.bd{padding:16px}
+.btn{height:36px;padding:0 16px;border-radius:6px;border:1px solid var(--pri);background:var(--pri);color:#fff;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover{background:var(--pri-d)}
+.btn.sec{background:#fff;color:var(--ink);border-color:#c5ccd6}.btn.sec:hover{background:#f5f6f8}
+.btn.dng{background:#fff;color:var(--bad);border-color:#e2b3b3}.btn.dng:hover{background:#fdf2f2}
+.btn.sm{height:30px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:16px;height:16px}
+:focus-visible{outline:3px solid #8fb2ee;outline-offset:1px}
+.field{margin-bottom:14px}
+.field>label{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
+.field .help{color:var(--muted);font-size:12.5px;margin-top:4px}
+input[type=text],input[type=number],input[type=password],input[type=url],select,textarea{width:100%;height:36px;padding:0 10px;border:1px solid #c5ccd6;border-radius:6px;background:#fff}
+textarea{height:auto;padding:8px 10px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--pri);outline:2px solid #cfdcf4;outline-offset:0}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.chk input{margin-top:3px;width:16px;height:16px}
+.chk b{display:block;font-weight:600}.chk span{color:var(--muted);font-size:12.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;background:#e8ecf2;color:#46526a}
+.chip.ok{background:#dcf3e4;color:#116531}.chip.bad{background:#fbe0e0;color:#9d1f1f}.chip.wait{background:#fbefd2;color:#8a5a0b}
+
+/* capture desk */
+.desk{max-width:1180px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.stage{background:#111a2b;border-radius:8px;padding:18px 18px 14px}
+.frame{position:relative;display:block;margin:0 auto;aspect-ratio:var(--ar,.78);width:min(100%,calc(64vh*var(--ar,.78)));overflow:hidden;border-radius:4px;background:#000;object-fit:cover}
+.frame video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.frame video.mirror{transform:scaleX(-1)}
+.gc{position:absolute;aspect-ratio:1;border-radius:50%;border:4px solid var(--bad);transform:translate(-50%,-50%);box-shadow:0 0 0 999px rgba(10,16,28,.52);transition:border-color .2s;pointer-events:none}
+.gc.ok{border-color:#25c35f}.gc.form{border-color:#f0b43c}.gc.load{border-color:#fff}
+.gs{position:absolute;left:50%;bottom:0;transform:translateX(-50%);border:2px dashed rgba(255,255,255,.5);border-bottom:0;border-radius:999px 999px 0 0/100% 100% 0 0;pointer-events:none}
+#toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;max-width:94%;padding:9px 16px 9px 12px;border-radius:6px;font-weight:600;font-size:14.5px;color:#fff;background:var(--bad);box-shadow:0 6px 20px rgba(0,0,0,.35);animation:pop .18s ease-out}
+#toast svg{width:18px;height:18px;flex:none}
+#toast.ok{background:#168a46}#toast.form{background:#e0a21b;color:#2a1c00}#toast.load{background:#2d3b55}
+@keyframes pop{from{transform:translate(-50%,-6px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+#camMsg{position:absolute;inset:0;background:#111a2b;color:#dbe3f2;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;text-align:center;padding:24px}
+.sbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap}
+#hint{color:#aebbd4;font-size:13.5px;flex:1;min-width:180px}#hint.good{color:#6fe39b}#hint.bad{color:#ff9a9a}
+.sbar .btn.sec{background:transparent;color:#e6ecf8;border-color:#41506b}.sbar .btn.sec:hover{background:#1b2740}
+.side{display:grid;gap:16px}
+.checks{list-style:none;margin:0;padding:0}
+.checks li{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #eef0f3}
+.checks li:last-child{border:0}
+.checks i{width:18px;height:18px;border-radius:50%;background:#e1e5ec;flex:none;display:grid;place-items:center}
+.checks li.pass i{background:var(--ok)}.checks li.fail i{background:var(--bad)}
+.checks i svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:3;display:none}
+.checks li.pass i .c,.checks li.fail i .x{display:block}
+.checks li.idle{color:var(--muted)}
+.recent{list-style:none;margin:0;padding:0}
+.recent li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eef0f3}
+.recent li:last-child{border:0}
+.recent img,.recent .ph{width:34px;height:42px;border-radius:3px;object-fit:cover;background:#e1e5ec;flex:none}
+.recent div{min-width:0;flex:1}.recent b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent small{color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{color:var(--muted);padding:6px 0}
+
+/* admin */
+.login{max-width:400px;margin:56px auto;padding:0 16px}
+.login .bd{padding:24px}
+.login h1{font-size:19px;margin-bottom:4px}.login p.sub{color:var(--muted);margin-bottom:18px}
+.err{color:var(--bad);font-size:13px;min-height:20px;margin:-4px 0 8px}
+.console{max-width:1180px;margin:0 auto;padding:20px;display:grid;grid-template-columns:210px minmax(0,1fr);gap:20px;align-items:start}
+.menu{position:sticky;top:76px;display:flex;flex-direction:column;gap:2px}
+.menu button{text-align:left;background:none;border:0;border-radius:6px;padding:9px 12px;font-weight:600;color:#44506a;cursor:pointer}
+.menu button:hover{background:#e6e9ef}.menu button.on{background:#fff;color:var(--pri);box-shadow:inset 3px 0 0 var(--pri)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:8px 0;width:100%}
+.sec h2{font-size:19px;margin-bottom:2px}.sec>p.sub{color:var(--muted);margin-bottom:16px}
+.sec .panel{margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.stat{padding:14px 16px}.stat b{display:block;font-size:26px;line-height:1.2}.stat span{color:var(--muted)}
+.mini{position:relative;aspect-ratio:var(--ar,.78);width:150px;background:#2b3a55;overflow:hidden;border-radius:4px}
+.mini .gc{border-width:2px;border-color:#fff;box-shadow:0 0 0 999px rgba(10,16,28,.45)}
+.mini .gs{border-width:1.5px}
+.row{display:flex;gap:16px;align-items:flex-start}
+.tokens{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tokens button{border:1px solid #c5ccd6;background:#f7f8fa;border-radius:4px;padding:2px 8px;font:12.5px ui-monospace,Menlo,Consolas,monospace;cursor:pointer}
+.tokens button:hover{background:#eaeef5}
+.example{margin-top:10px;padding:8px 10px;background:#f4f6f9;border-radius:6px;font:13px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+.savebar{position:sticky;bottom:0;margin-top:8px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 16px rgba(20,30,50,.08)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:12.5px;padding:8px 12px;border-bottom:1px solid var(--line);background:#fafbfc}
+.tbl td{padding:8px 12px;border-bottom:1px solid #eef0f3;vertical-align:middle}
+.tbl img{width:28px;height:35px;object-fit:cover;border-radius:3px;display:block}
+.tbl .acts{white-space:nowrap;text-align:right}
+.tblwrap{overflow:auto}
+.bar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}.bar input{max-width:260px}
+.test{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--muted)}
+ol.steps{margin:0 0 12px;padding-left:20px}ol.steps li{margin-bottom:4px}
+textarea.code{font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;height:230px;background:#f7f8fa}
+
+dialog{border:1px solid var(--line);border-radius:10px;padding:20px;width:min(420px,92vw);color:var(--ink)}
+dialog::backdrop{background:rgba(15,22,38,.55)}
+dialog h3{font-size:16px;margin-bottom:6px}dialog p{color:var(--muted);margin-bottom:16px}
+dialog .acts{display:flex;gap:10px;justify-content:flex-end}
+#snack{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1c2433;color:#fff;padding:10px 16px;border-radius:6px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:50}
+#snack.bad{background:var(--bad)}
+
+@media (max-width:900px){
+  .desk,.console{grid-template-columns:1fr;padding:12px}
+  .menu{position:static;flex-direction:row;overflow:auto}.menu button.on{box-shadow:inset 0 -3px 0 var(--pri)}.menu hr{display:none}
+  .brand small{display:none}.conn span{display:none}.top{gap:10px;padding:0 12px}.top nav a{padding:0 10px}
+  .grid2,.grid3,.stats{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><div class="mono" id="mono">S</div><div><b id="school">School</b><small>Student photo desk</small></div></div>
+  <nav>
+    <a href="#capture" id="navCap">Capture</a>
+    <a href="#admin" id="navAdm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Admin</a>
+  </nav>
+  <div class="conn" id="conn"><i></i><span>Drive not connected</span></div>
+</header>
+
+<!-- ================= CAPTURE ================= -->
+<main id="vCapture" class="desk">
+  <section class="stage">
+    <div class="frame" id="cam">
+      <video id="video" playsinline muted autoplay></video>
+      <div class="gs" id="gs"></div>
+      <div class="gc load" id="gc"></div>
+      <div id="toast" class="load"></div>
+      <div id="camMsg" hidden><p></p><button class="btn" id="retry">Try again</button></div>
+    </div>
+    <img class="frame" id="preview" alt="Captured photo" hidden>
+    <div class="sbar">
+      <span id="hint"></span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sec" id="switch" hidden>Switch camera</button>
+        <button class="btn" id="take" hidden>Take photo</button>
+        <button class="btn sec" id="manual" hidden>Take photo without face check</button>
+        <button class="btn sec" id="retake" hidden>Retake</button>
+        <button class="btn" id="save" hidden>Save and upload</button>
+        <button class="btn sec" id="keep" hidden>Keep on device and continue</button>
+        <button class="btn" id="next" hidden>Next student</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="panel">
+      <div class="hd">Student details</div>
+      <div class="bd">
+        <div class="field"><label for="name">Student name</label><input type="text" id="name" autocomplete="off"></div>
+        <div class="grid2">
+          <div class="field"><label for="roll">Roll no.</label><input type="text" id="roll" autocomplete="off"></div>
+          <div class="field"><label for="cls">Class</label><span id="classWrap"></span></div>
+        </div>
+        <p class="help" style="color:var(--muted);font-size:12.5px">The photo is taken automatically once all checks below pass and these three fields are filled.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="hd">Photo check</div>
+      <div class="bd">
+        <ul class="checks" id="checks"></ul>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="hd">Recent photos</div>
+      <div class="bd"><ul class="recent" id="recent"></ul></div>
+    </div>
+  </aside>
+</main>
+
+<!-- ================= ADMIN ================= -->
+<main id="vAdmin" hidden>
+  <div class="login" id="login">
+    <div class="panel"><div class="bd">
+      <h1 id="loginTitle">Administrator sign in</h1>
+      <p class="sub" id="loginSub">Enter the admin key to change photo size, face rules, file naming and Google Drive settings.</p>
+      <div class="field"><label for="akey" id="akeyL">Admin key</label><input type="password" id="akey" autocomplete="off"></div>
+      <div class="field" id="akey2w" hidden><label for="akey2">Confirm key</label><input type="password" id="akey2" autocomplete="off"></div>
+      <div class="err" id="loginErr"></div>
+      <button class="btn" id="signin" style="width:100%">Sign in</button>
+    </div></div>
+  </div>
+
+  <div class="console" id="console" hidden>
+    <nav class="menu" id="menu">
+      <button data-sec="overview" class="on">Overview</button>
+      <button data-sec="photo">Photo and camera</button>
+      <button data-sec="face">Face guidance</button>
+      <button data-sec="naming">Fields and file names</button>
+      <button data-sec="drive">Google Drive</button>
+      <button data-sec="records">Records</button>
+      <hr>
+      <button data-sec="school">School</button>
+      <button id="signout">Sign out</button>
+    </nav>
+
+    <div>
+      <!-- overview -->
+      <section class="sec" id="s-overview">
+        <h2>Overview</h2><p class="sub">Activity on this device and the current setup.</p>
+        <div class="stats">
+          <div class="panel stat"><b id="st1">0</b><span>Captured today</span></div>
+          <div class="panel stat"><b id="st2">0</b><span>Uploaded to Drive</span></div>
+          <div class="panel stat"><b id="st3">0</b><span>Waiting on this device</span></div>
+        </div>
+        <div class="panel"><div class="hd">Current output</div><div class="bd" id="ovOut"></div></div>
+        <div class="panel"><div class="hd">Google Drive</div><div class="bd" id="ovDrive"></div></div>
+      </section>
+
+      <!-- photo -->
+      <section class="sec" id="s-photo" hidden>
+        <h2>Photo and camera</h2><p class="sub">Size and quality of the saved photo.</p>
+        <div class="panel"><div class="bd">
+          <div class="field"><label for="a_preset">Size preset</label>
+            <select id="a_preset" data-k="preset">
+              <option value="passport">Passport, 35 × 45 mm (413 × 531 px)</option>
+              <option value="idcard">ID card, 25 × 35 mm (295 × 413 px)</option>
+              <option value="portrait">Large portrait (600 × 800 px)</option>
+              <option value="square">Square (600 × 600 px)</option>
+              <option value="custom">Custom size</option>
+            </select></div>
+          <div class="grid3">
+            <div class="field"><label for="a_w">Width (px)</label><input type="number" id="a_w" data-k="w"></div>
+            <div class="field"><label for="a_h">Height (px)</label><input type="number" id="a_h" data-k="h"></div>
+            <div class="field"><label for="a_q">JPEG quality (%)</label><input type="number" id="a_q" data-k="q"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="a_facing">Camera</label>
+              <select id="a_facing" data-k="facing"><option value="user">Front camera</option><option value="environment">Rear camera</option></select></div>
+          </div>
+          <label class="chk"><input type="checkbox" data-k="mirror"><div><b>Mirror the preview</b><span>Front camera only. The saved photo is never mirrored.</span></div></label>
+          <label class="chk"><input type="checkbox" data-k="auto"><div><b>Take the photo automatically</b><span>When off, the operator presses Take photo once the circle is green.</span></div></label>
+        </div></div>
+      </section>
+
+      <!-- face -->
+      <section class="sec" id="s-face" hidden>
+        <h2>Face guidance</h2><p class="sub">How the circle decides when the framing is right.</p>
+        <div class="panel"><div class="bd"><div class="row">
+          <div style="flex:1">
+            <div class="grid2">
+              <div class="field"><label for="a_fmin">Smallest face (% of width)</label><input type="number" id="a_fmin" data-k="faceMin"><div class="help">Below this the student sees “Too far”.</div></div>
+              <div class="field"><label for="a_fmax">Largest face (% of width)</label><input type="number" id="a_fmax" data-k="faceMax"><div class="help">Above this the student sees “Too close”.</div></div>
+              <div class="field"><label for="a_tol">Centering tolerance (%)</label><input type="number" id="a_tol" data-k="tol"><div class="help">How far the face may drift from the circle.</div></div>
+              <div class="field"><label for="a_hold">Hold still time (ms)</label><input type="number" id="a_hold" data-k="hold" step="100"><div class="help">Time the face must stay green before capture.</div></div>
+            </div>
+            <label class="chk"><input type="checkbox" data-k="chkPose"><div><b>Check head tilt and turn</b><span>Asks the student to keep the head straight and face the camera.</span></div></label>
+            <label class="chk"><input type="checkbox" data-k="chkLight"><div><b>Check lighting</b><span>Warns when the picture is too dark or too bright.</span></div></label>
+            <label class="chk"><input type="checkbox" data-k="shoulders"><div><b>Show shoulder guide</b><span>Dashed outline below the circle for chest-up framing.</span></div></label>
+          </div>
+          <div><div style="font-weight:600;font-size:13px;margin-bottom:6px">Preview</div>
+            <div class="mini" id="mini"><div class="gs"></div><div class="gc"></div></div></div>
+        </div></div></div>
+      </section>
+
+      <!-- naming -->
+      <section class="sec" id="s-naming" hidden>
+        <h2>Fields and file names</h2><p class="sub">How photos are named in Drive and which classes appear in the list.</p>
+        <div class="panel"><div class="hd">File name</div><div class="bd">
+          <div class="field"><label for="a_tpl">File name template</label><input type="text" id="a_tpl" data-k="tpl">
+            <div class="tokens" id="tokens"></div>
+            <div class="example" id="example"></div>
+            <div class="help">“.jpg” is added automatically. Spaces become underscores and characters Drive does not allow are removed.</div></div>
+          <div class="field"><label for="a_dup">When this roll no. and class was already captured</label>
+            <select id="a_dup" data-k="dup"><option value="ask">Ask before replacing the old photo</option><option value="replace">Replace the old photo without asking</option></select></div>
+        </div></div>
+        <div class="panel"><div class="hd">Class list</div><div class="bd">
+          <div class="field"><label for="a_classes">Classes</label><textarea id="a_classes" data-k="classes" rows="4" placeholder="6A&#10;6B&#10;7A"></textarea>
+            <div class="help">One per line or comma separated. Leave empty to let students type the class.</div></div>
+        </div></div>
+      </section>
+
+      <!-- drive -->
+      <section class="sec" id="s-drive" hidden>
+        <h2>Google Drive</h2><p class="sub">Where photos are saved.</p>
+        <div class="panel"><div class="bd">
+          <div class="field"><label for="a_script">Web app URL</label><input type="url" id="a_script" data-k="script" placeholder="https://script.google.com/macros/s/…/exec"><div class="help">From step 3 of the setup below.</div></div>
+          <div class="field"><label for="a_folder">Drive folder link</label><input type="url" id="a_folder" data-k="folder" placeholder="https://drive.google.com/drive/folders/…"><div class="help">Your Google account must be able to edit this folder.</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn sec" id="a_check">Check connection</button>
+            <button class="btn sec" id="a_test">Send test file</button>
+            <button class="btn sec" id="a_link">Copy student link</button>
+          </div>
+          <div class="test" id="testOut"></div>
+        </div></div>
+        <div class="panel"><div class="hd">One-time setup</div><div class="bd">
+          <ol class="steps">
+            <li>Open <b>script.google.com</b>, create a new project and replace the sample code with the code below.</li>
+            <li>Change <b>ADMIN_KEY</b> to a secret of your own and save the project.</li>
+            <li>Choose Deploy, New deployment, Web app. Set <b>Execute as: Me</b> and <b>Who has access: Anyone</b>, then deploy and authorise.</li>
+            <li>Paste the Web app URL and your Drive folder link above, then save the settings.</li>
+          </ol>
+          <textarea class="code" id="gsCode" readonly></textarea>
+          <div style="margin-top:8px"><button class="btn sec sm" id="a_copy">Copy code</button></div>
+        </div></div>
+      </section>
+
+      <!-- records -->
+      <section class="sec" id="s-records" hidden>
+        <h2>Records</h2><p class="sub">Photos taken on this device. Files already uploaded stay in Drive.</p>
+        <div class="bar">
+          <input type="text" id="r_q" placeholder="Search name, roll no. or class">
+          <button class="btn sec" id="r_retry">Retry waiting uploads</button>
+          <button class="btn sec" id="r_csv">Export CSV</button>
+          <button class="btn dng" id="r_clear">Clear list</button>
+        </div>
+        <div class="panel tblwrap"><table class="tbl"><thead><tr><th></th><th>Student</th><th>Roll</th><th>Class</th><th>File</th><th>Time</th><th>Status</th><th></th></tr></thead><tbody id="r_body"></tbody></table></div>
+      </section>
+
+      <!-- school -->
+      <section class="sec" id="s-school" hidden>
+        <h2>School</h2><p class="sub">Shown in the page header.</p>
+        <div class="panel"><div class="bd">
+          <div class="field"><label for="a_school">School name</label><input type="text" id="a_school" data-k="school"></div>
+          <p style="color:var(--muted)">To change the admin key, edit <b>ADMIN_KEY</b> in the Google script and deploy a new version.</p>
+        </div></div>
+      </section>
+
+      <div class="savebar" id="savebar" hidden>
+        <span>You have unsaved changes.</span>
+        <span style="display:flex;gap:8px"><button class="btn sec" id="a_discard">Discard</button><button class="btn" id="a_save">Save changes</button></span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<dialog id="dlg"><h3></h3><p></p><div class="acts"><button class="btn sec" id="dlgNo">Cancel</button><button class="btn" id="dlgYes">OK</button></div></dialog>
+<div id="snack" hidden></div>
+
+<script type="text/plain" id="gs-src">
+// Student Photo Desk - Google Apps Script receiver
+const ADMIN_KEY = 'change-this-key';
+
+function out_(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);}
+function cfg_(){return JSON.parse(PropertiesService.getScriptProperties().getProperty('cfg')||'{}');}
+function doGet(){return out_(cfg_());}
+
+function doPost(e){
+  try{
+    const d = JSON.parse(e.postData.contents);
+    if(d.action==='verify') return out_({ok:d.key===ADMIN_KEY});
+    if(d.action==='saveConfig'){
+      if(d.key!==ADMIN_KEY) return out_({ok:false,error:'Wrong admin key'});
+      PropertiesService.getScriptProperties().setProperty('cfg',JSON.stringify(d.config));
+      return out_({ok:true});
+    }
+    const id = cfg_().folderId;
+    if(!id) return out_({ok:false,error:'Drive folder not set in admin settings'});
+    const name = String(d.filename||'photo.jpg').replace(/[\\/:*?"<>|]/g,'_').slice(0,120);
+    const folder = DriveApp.getFolderById(id);
+    const old = folder.getFilesByName(name);
+    while(old.hasNext()) old.next().setTrashed(true);
+    folder.createFile(Utilities.newBlob(Utilities.base64Decode(d.data),'image/jpeg',name));
+    return out_({ok:true,name:name});
+  }catch(err){
+    return out_({ok:false,error:String(err)});
+  }
+}
+</script>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- constants ---------- */
+const PRESETS={passport:[413,531],idcard:[295,413],portrait:[600,800],square:[600,600]};
+const DEF={school:'Your School Name',preset:'passport',w:413,h:531,q:90,facing:'user',mirror:true,auto:true,
+  faceMin:32,faceMax:48,tol:8,hold:1200,chkPose:true,chkLight:true,shoulders:true,
+  tpl:'{roll}_{name}_{class}',dup:'ask',classes:'',script:'',folder:'',folderId:''};
+const MP='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const MODEL='https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
+const IC={
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18.5v.01"/></svg>',
+  ok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>'};
+
+/* ---------- state ---------- */
+let cfg={...DEF}, recs=[], adminKey='', stream=null, detector=null, detMode='', mode='idle', timer=0, facingOv='';
+let pend=null,pendKey='',pendSince=0,cur=null,curKey='',okSince=0,photoURL='',curRec=null,dirty=false,connState='none';
+const video=$('#video'), gc=$('#gc'), toast=$('#toast');
+const G={cy:.42};
+
+try{Object.assign(cfg,JSON.parse(localStorage.getItem('spc_cfg')||'{}'))}catch(e){}
+try{recs=JSON.parse(localStorage.getItem('spc_rec')||'[]')}catch(e){recs=[]}
+const qs=new URLSearchParams(location.search); if(qs.get('s')) cfg.script=qs.get('s');
+const saveCfg=()=>{try{localStorage.setItem('spc_cfg',JSON.stringify(cfg))}catch(e){}};
+function saveRecs(){
+  for(let i=0;i<4;i++){
+    try{localStorage.setItem('spc_rec',JSON.stringify(recs));return}catch(e){
+      const r=recs.find(x=>x.data&&x!==curRec)||recs.slice().reverse().find(x=>x.thumb);
+      if(r&&r.data) delete r.data; else if(r) delete r.thumb; else recs.pop();
+    }
+  }
+}
+const pubCfg=()=>{const{script,...r}=cfg;return r;};
+
+/* ---------- helpers ---------- */
+function snack(m,bad){const s=$('#snack');s.textContent=m;s.className=bad?'bad':'';s.hidden=false;clearTimeout(snack.t);snack.t=setTimeout(()=>s.hidden=true,3200);}
+function ask(title,text,yes){return new Promise(res=>{const d=$('#dlg');d.querySelector('h3').textContent=title;d.querySelector('p').textContent=text;$('#dlgYes').textContent=yes||'OK';
+  const done=v=>{d.close();res(v)};$('#dlgYes').onclick=()=>done(true);$('#dlgNo').onclick=()=>done(false);d.oncancel=()=>res(false);d.showModal();});}
+async function post(body){
+  const r=await fetch(cfg.script,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  return r.json();
+}
+function geom(c){
+  const ideal=(c.faceMin+c.faceMax)/200;
+  const D=Math.min(ideal*1.25,.88,.8*c.h/c.w);
+  const half=D*c.w/c.h/2;
+  const cy=Math.min(Math.max(.42,half+.04),1-half-.04);
+  return{D,cy,half};
+}
+function drawGuide(root,c){
+  const g=geom(c),circ=root.querySelector('.gc'),sh=root.querySelector('.gs');
+  circ.style.width=g.D*100+'%';circ.style.left='50%';circ.style.top=g.cy*100+'%';
+  sh.hidden=!c.shoulders;
+  sh.style.width=Math.min(.98,g.D*2.4)*100+'%';sh.style.top=(g.cy+g.half+.035)*100+'%';sh.style.bottom='-2px';
+  return g;
+}
+function clean(v){return String(v).trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'_');}
+function buildName(tpl,m){
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  const map={roll:m.roll,name:m.name,class:m.cls,date:`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`,time:`${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`};
+  let s=(tpl||DEF.tpl).replace(/\{(\w+)\}/g,(x,k)=>map[k]!==undefined?clean(map[k]):x).replace(/[\\/:*?"<>|]+/g,'_');
+  return (s||'photo')+'.jpg';
+}
+const classList=s=>(s||'').split(/[\n,]/).map(x=>x.trim()).filter(Boolean);
+function folderId(v){v=(v||'').trim();const m=v.match(/folders\/([\w-]+)/)||v.match(/[?&]id=([\w-]+)/);return m?m[1]:(/^[\w-]{15,}$/.test(v)?v:'');}
+
+/* ---------- apply config to UI ---------- */
+function apply(){
+  $('#school').textContent=cfg.school||DEF.school;
+  $('#mono').textContent=(cfg.school||'S').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('')||'S';
+  document.title=(cfg.school||'')+' · Photo desk';
+  document.documentElement.style.setProperty('--ar',cfg.w/cfg.h);
+  Object.assign(G,drawGuide($('#cam'),cfg));
+  const list=classList(cfg.classes),old=$('#cls')?$('#cls').value:'';
+  $('#classWrap').innerHTML=list.length?'<select id="cls"><option value="">Select</option>'+list.map(c=>`<option>${esc(c)}</option>`).join('')+'</select>':'<input type="text" id="cls" autocomplete="off">';
+  $('#cls').value=old;
+  video.classList.toggle('mirror',mirrored());
+  renderChecks();renderRecent();
+  $('#take').hidden=!(mode==='live'&&!cfg.auto);
+}
+function setConn(s,t){connState=s;const c=$('#conn');c.className='conn '+s;c.querySelector('span').textContent=t;}
+async function loadRemote(){
+  if(!cfg.script){setConn('none','Drive not connected');return;}
+  setConn('wait','Connecting to Drive…');
+  try{
+    const ctl=new AbortController();setTimeout(()=>ctl.abort(),7000);
+    const j=await (await fetch(cfg.script,{cache:'no-store',signal:ctl.signal})).json();
+    if(j&&typeof j==='object'){Object.keys(DEF).forEach(k=>{if(k!=='script'&&j[k]!==undefined)cfg[k]=j[k]});saveCfg();}
+    setConn(cfg.folderId?'ok':'wait',cfg.folderId?'Drive connected':'Drive folder not set');
+  }catch(e){setConn('bad','Drive unreachable');}
+}
+
+/* ---------- camera + detector ---------- */
+const facingNow=()=>facingOv||cfg.facing;
+const mirrored=()=>cfg.mirror&&facingNow()==='user';
+function camError(m){const b=$('#camMsg');b.querySelector('p').textContent=m;b.hidden=false;}
+async function startCam(){
+  stopCam();$('#camMsg').hidden=true;
+  if(!window.isSecureContext||!navigator.mediaDevices){camError('The camera needs a secure page. Open this app over https.');return false;}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facingNow(),width:{ideal:1280},height:{ideal:960}},audio:false});
+    video.srcObject=stream;await video.play();video.classList.toggle('mirror',mirrored());
+    try{const dv=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');$('#switch').hidden=dv.length<2;}catch(e){}
+    return true;
+  }catch(e){
+    camError(e&&e.name==='NotFoundError'?'No camera was found on this device.':'Camera access is blocked. Allow the camera in the browser address bar, then try again.');
+    return false;
+  }
+}
+function stopCam(){clearTimeout(timer);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
+
+async function initDetector(){
+  if(detector) return true;
+  if('FaceDetector' in window){
+    try{const d=new FaceDetector({fastMode:true,maxDetectedFaces:3});await d.detect(video);detector=d;detMode='native';return true;}catch(e){}
+  }
+  try{
+    const mod=await import(MP+'/vision_bundle.mjs');
+    const fs=await mod.FilesetResolver.forVisionTasks(MP+'/wasm');
+    const mk=del=>mod.FaceDetector.createFromOptions(fs,{baseOptions:{modelAssetPath:MODEL,delegate:del},runningMode:'VIDEO',minDetectionConfidence:.6});
+    try{detector=await mk('GPU')}catch(e){detector=await mk('CPU')}
+    detMode='mp';return true;
+  }catch(e){return false;}
+}
+async function detect(){
+  if(video.readyState<2||!video.videoWidth) return [];
+  if(detMode==='native'){const r=await detector.detect(video);return r.map(f=>({x:f.boundingBox.x,y:f.boundingBox.y,w:f.boundingBox.width,h:f.boundingBox.height}));}
+  const r=detector.detectForVideo(video,performance.now());
+  return r.detections.map(d=>({x:d.boundingBox.originX,y:d.boundingBox.originY,w:d.boundingBox.width,h:d.boundingBox.height,kp:d.keypoints}));
+}
+function crop(){
+  const vw=video.videoWidth,vh=video.videoHeight,ar=cfg.w/cfg.h;let cw,ch;
+  if(vw/vh>ar){ch=vh;cw=vh*ar}else{cw=vw;ch=vw/ar}
+  return{sx:(vw-cw)/2,sy:(vh-ch)/2,cw,ch};
+}
+const lc=document.createElement('canvas');lc.width=lc.height=16;const lx=lc.getContext('2d',{willReadFrequently:true});
+function luminance(c){lx.drawImage(video,c.sx,c.sy,c.cw,c.ch,0,0,16,16);const d=lx.getImageData(0,0,16,16).data;let s=0;for(let i=0;i<d.length;i+=4)s+=.299*d[i]+.587*d[i+1]+.114*d[i+2];return s/256;}
+
+/* ---------- face rules ---------- */
+const formOk=()=>$('#name').value.trim()&&$('#roll').value.trim()&&$('#cls').value.trim();
+function analyze(faces){
+  const ck={face:'idle',dist:'idle',pos:'idle',pose:cfg.chkPose?'idle':'off',light:cfg.chkLight?'idle':'off'};
+  if(!faces.length){ck.face='fail';return{type:'err',msg:'Face not detected. Look straight at the camera.',ck};}
+  if(faces.length>1){ck.face='fail';return{type:'err',msg:'Only one person should be in the frame.',ck};}
+  ck.face='pass';
+  const f=faces[0],c=crop(),tol=cfg.tol/100;let msg='';
+  const w=f.w/c.cw;let dx=((f.x+f.w/2)-c.sx)/c.cw-.5;if(mirrored())dx=-dx;
+  const dy=((f.y+f.h/2)-c.sy)/c.ch-G.cy;
+  if(w<cfg.faceMin/100){ck.dist='fail';msg=msg||'Too far. Please come closer to the camera.';}
+  else if(w>cfg.faceMax/100){ck.dist='fail';msg=msg||'Too close. Please move back a little.';}
+  else ck.dist='pass';
+  ck.pos='pass';
+  if(dx>tol){ck.pos='fail';msg=msg||'Move your head to the left.';}
+  else if(dx<-tol){ck.pos='fail';msg=msg||'Move your head to the right.';}
+  else if(dy>tol){ck.pos='fail';msg=msg||'Move your head up a little.';}
+  else if(dy<-tol){ck.pos='fail';msg=msg||'Move your head down a little.';}
+  if(cfg.chkPose){
+    ck.pose='pass';
+    if(f.kp&&f.kp.length>=3){
+      const a=f.kp[0],b=f.kp[1],n=f.kp[2];
+      const ang=Math.atan2((b.y-a.y)*video.videoHeight,(b.x-a.x)*video.videoWidth)*180/Math.PI;
+      const eye=Math.abs(b.x-a.x);
+      if(Math.abs(ang)>12){ck.pose='fail';msg=msg||'Keep your head straight. Do not tilt.';}
+      else if(eye>0&&Math.abs(n.x-(a.x+b.x)/2)/eye>.4){ck.pose='fail';msg=msg||'Face the camera directly.';}
+    }
+  }
+  if(cfg.chkLight){
+    const L=luminance(c);ck.light='pass';
+    if(L<45){ck.light='fail';msg=msg||'Too dark. Face a light source.';}
+    else if(L>220){ck.light='fail';msg=msg||'Too bright. Avoid strong light behind or on you.';}
+  }
+  if(msg) return{type:'err',msg,ck};
+  if(!formOk()) return{type:'form',msg:'Position is good. Fill in name, roll no. and class.',ck};
+  return{type:'ok',msg:'',ck};
+}
+const ROWS=[['face','Face detected'],['dist','Distance'],['pos','Centered in circle'],['pose','Head straight'],['light','Lighting']];
+function renderChecks(ck){
+  ck=ck||{};
+  $('#checks').innerHTML=ROWS.filter(([k])=>!(k==='pose'&&!cfg.chkPose)&&!(k==='light'&&!cfg.chkLight))
+    .map(([k,l])=>`<li class="${ck[k]||'idle'}"><i><svg class="c" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg><svg class="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></i>${l}</li>`).join('');
+}
+function setToast(type,msg){
+  if(toast.dataset.m===type+msg) return;toast.dataset.m=type+msg;
+  toast.className=type;toast.innerHTML=(type==='ok'?IC.ok:type==='load'?IC.info:IC.warn)+'<span></span>';toast.lastChild.textContent=msg;toast.hidden=!msg;
+  gc.className='gc '+(type==='err'?'':type);
+}
+function setHint(m,k){const h=$('#hint');h.textContent=m;h.className=k||'';}
+
+/* ---------- loop ---------- */
+function commit(r){
+  const now=performance.now(),key=r.type+r.msg;
+  if(key!==pendKey){pendKey=key;pend=r;pendSince=now;}
+  if(now-pendSince>=220&&key!==curKey){cur=pend;curKey=key;okSince=cur.type==='ok'?now:0;}
+  if(!cur) return;
+  renderChecks(cur.ck);
+  if(cur.type==='ok'){
+    if(cfg.auto){
+      const left=cfg.hold-(now-okSince);
+      if(left<=0){capture();return;}
+      setToast('ok','Perfect. Hold still… '+Math.ceil(left/1000));
+    }else{setToast('ok','Perfect. Press Take photo.');}
+    $('#take').disabled=false;
+  }else{setToast(cur.type,cur.msg);$('#take').disabled=true;}
+}
+async function tick(){
+  if(mode!=='live') return;
+  let faces=[];try{faces=await detect()}catch(e){}
+  if(mode!=='live') return;
+  commit(analyze(faces));
+  timer=setTimeout(tick,90);
+}
+function buttons(show){['switch','take','manual','retake','save','keep','next'].forEach(b=>$('#'+b).hidden=!show.includes(b));}
+function goLive(){
+  clearTimeout(timer);mode='live';cur=null;curKey='';pendKey='';toast.dataset.m='';
+  $('#cam').hidden=false;$('#preview').hidden=true;renderChecks();
+  buttons(['switch'].concat(cfg.auto?[]:['take']));$('#take').disabled=true;
+  $('#switch').hidden=$('#switch').dataset.n!=='1';
+  setHint('Position the face inside the circle. The photo is taken automatically.');
+  tick();
+}
+
+/* ---------- capture + upload ---------- */
+function capture(){
+  if(mode!=='live') return;
+  mode='preview';clearTimeout(timer);
+  const c=crop(),cv=document.createElement('canvas');cv.width=cfg.w;cv.height=cfg.h;
+  cv.getContext('2d').drawImage(video,c.sx,c.sy,c.cw,c.ch,0,0,cfg.w,cfg.h);
+  photoURL=cv.toDataURL('image/jpeg',cfg.q/100);
+  $('#preview').src=photoURL;$('#cam').hidden=true;$('#preview').hidden=false;
+  buttons(['retake','save']);$('#save').disabled=false;
+  setHint('Check the photo. Save it, or retake if it is not right.');
+}
+function thumb(){return new Promise(res=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=64;c.height=Math.round(64*cfg.h/cfg.w);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.6));};i.src=photoURL;});}
+
+async function uploadRec(r){
+  if(!cfg.script) throw new Error('Google Drive is not set up. Ask the admin to add the web app URL.');
+  const j=await post({filename:r.file,data:r.data.split(',')[1]});
+  if(!j.ok) throw new Error(j.error||'Upload failed');
+}
+async function save(){
+  if(!formOk()){setHint('Fill in name, roll no. and class first.','bad');return;}
+  const m={name:$('#name').value.trim(),roll:$('#roll').value.trim(),cls:$('#cls').value.trim()};
+  const file=buildName(cfg.tpl,m);
+  const dup=recs.find(r=>r.roll.toLowerCase()===m.roll.toLowerCase()&&r.cls.toLowerCase()===m.cls.toLowerCase()&&r.status==='ok'&&r!==curRec);
+  if(dup&&cfg.dup==='ask'&&!(await ask('Photo already exists',`${dup.name} (roll ${dup.roll}, class ${dup.cls}) was already saved at ${new Date(dup.t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}. Replace it with this photo?`,'Replace'))) return;
+  if(!curRec){curRec={id:Date.now(),...m,file,t:Date.now(),status:'wait',data:photoURL,thumb:await thumb()};recs.unshift(curRec);}
+  else{Object.assign(curRec,m,{file,data:photoURL});}
+  saveRecs();
+  $('#save').disabled=true;setHint('Uploading '+file+'…');
+  try{
+    await uploadRec(curRec);
+    curRec.status='ok';delete curRec.data;saveRecs();renderRecent();
+    mode='done';buttons(['next']);setHint('Saved to Drive as '+file,'good');curRec=null;
+  }catch(e){
+    $('#save').disabled=false;buttons(['retake','save','keep']);
+    setHint((e.message||'Network error')+' You can retry, or keep the photo on this device and upload later from Admin, Records.','bad');renderRecent();
+  }
+}
+function nextStudent(){['name','roll'].forEach(i=>$('#'+i).value='');$('#cls').value='';curRec=null;$('#name').focus();goLive();}
+$('#keep').onclick=()=>{curRec=null;saveRecs();snack('Photo kept on this device.');nextStudent();};
+$('#next').onclick=nextStudent;
+$('#retake').onclick=()=>{curRec=null;goLive();};
+$('#save').onclick=save;
+$('#take').onclick=capture;
+$('#manual').onclick=capture;
+$('#retry').onclick=boot;
+$('#switch').onclick=async()=>{facingOv=facingNow()==='user'?'environment':'user';if(await startCam()) goLive();};
+['name','roll'].forEach(i=>$('#'+i).addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()}));
+
+function renderRecent(){
+  const l=recs.slice(0,4);
+  $('#recent').innerHTML=l.length?l.map(r=>`<li>${r.thumb?`<img src="${r.thumb}" alt="">`:'<span class="ph"></span>'}<div><b>${esc(r.name)}</b><small>${esc(r.file)}</small></div><span class="chip ${r.status==='ok'?'ok':'wait'}">${r.status==='ok'?'Saved':'Waiting'}</span></li>`).join(''):'<li class="empty">No photos yet on this device.</li>';
+}
+
+/* ---------- boot / routing ---------- */
+async function boot(){
+  mode='idle';$('#camMsg').hidden=true;setToast('load','Starting camera…');buttons([]);
+  if(!(await startCam())) return;
+  const dv=await navigator.mediaDevices.enumerateDevices().catch(()=>[]);$('#switch').dataset.n=dv.filter(d=>d.kind==='videoinput').length>1?'1':'';
+  setToast('load','Loading face check…');
+  if(!(await initDetector())){setToast('err','Face check could not load. Check the internet connection.');$('#camMsg').hidden=false;$('#camMsg p').textContent='The face check could not load. Check the internet connection and try again.';buttons(['manual']);return;}
+  goLive();
+}
+function route(){
+  const adm=location.hash==='#admin';
+  $('#vCapture').hidden=adm;$('#vAdmin').hidden=!adm;
+  $('#navCap').classList.toggle('on',!adm);$('#navAdm').classList.toggle('on',adm);
+  if(adm){stopCam();mode='idle';initAdmin();}
+  else if(mode==='idle'||!stream) boot();
+}
+window.addEventListener('hashchange',route);
+
+/* ---------- admin: auth ---------- */
+async function hash(s){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('spc:'+s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){return 'p:'+btoa(unescape(encodeURIComponent(s)));}}
+const setupMode=()=>!cfg.script&&!localStorage.getItem('spc_kh');
+async function authCheck(k){
+  if(cfg.script){const j=await post({action:'verify',key:k});return !!j.ok;}
+  return (await hash(k))===localStorage.getItem('spc_kh');
+}
+async function initAdmin(){
+  if(adminKey){showConsole();return;}
+  const k=sessionStorage.getItem('spc_ak');
+  if(k){try{if(await authCheck(k)){adminKey=k;showConsole();return;}}catch(e){}}
+  $('#console').hidden=true;$('#login').hidden=false;
+  const s=setupMode();
+  $('#loginTitle').textContent=s?'Create an admin key':'Administrator sign in';
+  $('#loginSub').textContent=s?'First-time setup. Choose a key that only you know. Use the same text as ADMIN_KEY in your Google script.':'Enter the admin key to change photo size, face rules, file naming and Google Drive settings.';
+  $('#akey2w').hidden=!s;$('#signin').textContent=s?'Create key and continue':'Sign in';$('#akey').value=$('#akey2').value='';$('#loginErr').textContent='';
+}
+$('#signin').onclick=async()=>{
+  const k=$('#akey').value,e=$('#loginErr');
+  if(!k){e.textContent='Enter the admin key.';return;}
+  try{
+    if(setupMode()){
+      if(k.length<4){e.textContent='Use at least 4 characters.';return;}
+      if(k!==$('#akey2').value){e.textContent='The two keys do not match.';return;}
+      localStorage.setItem('spc_kh',await hash(k));
+    }else if(!(await authCheck(k))){e.textContent='That key is not correct.';return;}
+  }catch(x){e.textContent='Cannot reach the Google script. Check the web app URL and your connection.';return;}
+  adminKey=k;sessionStorage.setItem('spc_ak',k);showConsole();
+};
+$('#akey').addEventListener('keydown',e=>{if(e.key==='Enter')$('#signin').click()});
+$('#akey2').addEventListener('keydown',e=>{if(e.key==='Enter')$('#signin').click()});
+$('#signout').onclick=()=>{adminKey='';sessionStorage.removeItem('spc_ak');location.hash='#capture';};
+
+/* ---------- admin: console ---------- */
+function showConsole(){$('#login').hidden=true;$('#console').hidden=false;fillAdmin();showSec(showSec.cur||'overview');}
+function showSec(n){
+  showSec.cur=n;
+  $$('#console section.sec').forEach(s=>s.hidden=s.id!=='s-'+n);
+  $$('#menu button[data-sec]').forEach(b=>b.classList.toggle('on',b.dataset.sec===n));
+  $('#savebar').hidden=!(dirty&&['photo','face','naming','drive','school'].includes(n));
+  if(n==='overview')renderOverview();if(n==='records')renderRecords();if(n==='face')preview();
+}
+$('#menu').addEventListener('click',e=>{const b=e.target.closest('button[data-sec]');if(b)showSec(b.dataset.sec);});
+
+function fillAdmin(){
+  $$('[data-k]').forEach(el=>{const v=cfg[el.dataset.k];if(el.type==='checkbox')el.checked=!!v;else el.value=v??'';});
+  $('#gsCode').value=$('#gs-src').textContent.trim();
+  $('#tokens').innerHTML=['{roll}','{name}','{class}','{date}','{time}'].map(t=>`<button type="button" data-t="${t}">${t}</button>`).join('');
+  setDirty(false);preview();
+}
+function readAdmin(){
+  const p={};
+  $$('[data-k]').forEach(el=>{const k=el.dataset.k;p[k]=el.type==='checkbox'?el.checked:el.type==='number'?parseInt(el.value,10):el.value.trim();});
+  return p;
+}
+function setDirty(v){dirty=v;$('#savebar').hidden=!(v&&['photo','face','naming','drive','school'].includes(showSec.cur));}
+function preview(){
+  const p={...cfg,...readAdmin()};
+  if(!(p.w>0&&p.h>0&&p.faceMin>0&&p.faceMax>0)) return;
+  $('#mini').style.setProperty('--ar',p.w/p.h);drawGuide($('#mini'),p);
+  $('#example').textContent=buildName(p.tpl,{roll:'24',name:'Asha Verma',cls:'7B'});
+}
+$('#console').addEventListener('input',e=>{
+  if(!e.target.dataset||!e.target.dataset.k) return;
+  const k=e.target.dataset.k;
+  if(k==='preset'&&PRESETS[e.target.value]){[$('#a_w').value,$('#a_h').value]=PRESETS[e.target.value];}
+  if((k==='w'||k==='h')) $('#a_preset').value='custom';
+  setDirty(true);preview();
+});
+$('#tokens').addEventListener('click',e=>{const t=e.target.dataset.t;if(!t)return;const i=$('#a_tpl'),s=i.selectionStart??i.value.length;i.value=i.value.slice(0,s)+t+i.value.slice(i.selectionEnd??s);i.focus();setDirty(true);preview();});
+$('#a_discard').onclick=()=>{fillAdmin();};
+
+function validate(p){
+  const rng=(v,a,b,n)=>(Number.isFinite(v)&&v>=a&&v<=b)?'':`${n} must be between ${a} and ${b}.`;
+  return rng(p.w,100,2000,'Width')||rng(p.h,100,2000,'Height')||rng(p.q,40,100,'Quality')||rng(p.faceMin,10,80,'Smallest face')||rng(p.faceMax,15,90,'Largest face')
+    ||(p.faceMax<=p.faceMin?'Largest face must be bigger than smallest face.':'')||rng(p.tol,2,25,'Centering tolerance')||rng(p.hold,300,5000,'Hold time')
+    ||(!p.tpl?'File name template cannot be empty.':'')||(p.folder&&!folderId(p.folder)?'The Drive folder link is not recognised.':'');
+}
+$('#a_save').onclick=async()=>{
+  const p=readAdmin(),bad=validate(p);if(bad){snack(bad,true);return;}
+  Object.assign(cfg,p,{folderId:folderId(p.folder)});saveCfg();apply();setDirty(false);
+  if(!cfg.script){snack('Saved on this device. Add the Drive web app URL to share settings.');return;}
+  try{const j=await post({action:'saveConfig',key:adminKey,config:pubCfg()});
+    if(j.ok){snack('Saved. Every device will use these settings.');loadRemote();}else snack(j.error==='Wrong admin key'?'Saved here, but the key does not match ADMIN_KEY in the Google script.':(j.error||'Server did not accept the settings.'),true);
+  }catch(e){snack('Saved here, but the Google script could not be reached.',true);}
+};
+
+/* overview */
+function renderOverview(){
+  const t0=new Date();t0.setHours(0,0,0,0);
+  $('#st1').textContent=recs.filter(r=>r.t>=t0).length;$('#st2').textContent=recs.filter(r=>r.status==='ok').length;$('#st3').textContent=recs.filter(r=>r.status!=='ok').length;
+  $('#ovOut').innerHTML=`<b>${cfg.w} × ${cfg.h} px</b>, JPEG ${cfg.q}%. Example file name: <code>${esc(buildName(cfg.tpl,{roll:'24',name:'Asha Verma',cls:'7B'}))}</code>`;
+  $('#ovDrive').innerHTML=cfg.script?`<span class="chip ${connState==='ok'?'ok':connState==='bad'?'bad':'wait'}">${$('#conn span').textContent}</span> &nbsp;${cfg.folderId?'Folder is set.':'No folder set yet.'}`:'<span class="chip">Not connected</span> &nbsp;Open the Google Drive section to set it up.';
+}
+
+/* drive */
+function testMsg(ok,m){$('#testOut').innerHTML=`<span class="chip ${ok?'ok':'bad'}">${ok?'OK':'Problem'}</span> ${esc(m)}`;}
+$('#a_check').onclick=async()=>{
+  const u=$('#a_script').value.trim();if(!u){testMsg(false,'Enter the web app URL first.');return;}
+  cfg.script=u;$('#testOut').textContent='Checking…';
+  try{const j=await post({action:'verify',key:adminKey});testMsg(!!j.ok,j.ok?'Script reachable and the admin key matches.':'Script reachable, but the key does not match ADMIN_KEY in the script.');}
+  catch(e){testMsg(false,'Cannot reach the script. Check the URL and that access is set to Anyone.');}
+};
+$('#a_test').onclick=async()=>{
+  const u=$('#a_script').value.trim();if(!u){testMsg(false,'Enter the web app URL first.');return;}
+  if(!cfg.folderId){testMsg(false,'Save the settings with a Drive folder link first.');return;}
+  cfg.script=u;$('#testOut').textContent='Sending…';
+  const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#2456a6';x.fillRect(0,0,64,64);
+  try{const j=await post({filename:'_test.jpg',data:c.toDataURL('image/jpeg').split(',')[1]});testMsg(!!j.ok,j.ok?'_test.jpg was added to your Drive folder.':(j.error||'Upload failed.'));}
+  catch(e){testMsg(false,'Cannot reach the script.');}
+};
+$('#a_link').onclick=async()=>{
+  const u=$('#a_script').value.trim();if(!u){snack('Enter the web app URL first.',true);return;}
+  const link=location.origin+location.pathname+'?s='+encodeURIComponent(u);
+  try{await navigator.clipboard.writeText(link);snack('Student link copied.');}catch(e){prompt('Student link',link);}
+};
+$('#a_copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#gsCode').value);snack('Code copied.');}catch(e){$('#gsCode').select();}};
+
+/* records */
+function renderRecords(){
+  const q=$('#r_q').value.trim().toLowerCase();
+  const l=recs.filter(r=>!q||(r.name+' '+r.roll+' '+r.cls).toLowerCase().includes(q));
+  $('#r_body').innerHTML=l.length?l.map(r=>`<tr><td>${r.thumb?`<img src="${r.thumb}" alt="">`:''}</td><td>${esc(r.name)}</td><td>${esc(r.roll)}</td><td>${esc(r.cls)}</td><td>${esc(r.file)}</td><td>${new Date(r.t).toLocaleString([], {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td><td><span class="chip ${r.status==='ok'?'ok':'wait'}">${r.status==='ok'?'Uploaded':'Waiting'}</span></td><td class="acts">${r.status!=='ok'&&r.data?`<button class="btn sec sm" data-r="${r.id}">Retry</button> `:''}<button class="btn dng sm" data-d="${r.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty" style="padding:16px">No records.</td></tr>';
+}
+$('#r_q').oninput=renderRecords;
+async function retry(r){try{await uploadRec(r);r.status='ok';delete r.data;return true;}catch(e){return false;}}
+$('#r_body').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.d){if(await ask('Delete this record?','Only the entry on this device is removed. The file in Drive is not touched.','Delete')){recs=recs.filter(r=>r.id!=b.dataset.d);saveRecs();renderRecords();renderRecent();}}
+  if(b.dataset.r){const r=recs.find(x=>x.id==b.dataset.r);b.disabled=true;const ok=await retry(r);saveRecs();snack(ok?'Uploaded.':'Upload failed.',!ok);renderRecords();renderRecent();}
+});
+$('#r_retry').onclick=async()=>{const w=recs.filter(r=>r.status!=='ok'&&r.data);if(!w.length){snack('Nothing is waiting.');return;}let n=0;for(const r of w)if(await retry(r))n++;saveRecs();snack(`${n} of ${w.length} uploaded.`,n<w.length);renderRecords();renderRecent();};
+$('#r_csv').onclick=()=>{
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const csv=['Name,Roll,Class,File,Time,Status'].concat(recs.map(r=>[r.name,r.roll,r.cls,r.file,new Date(r.t).toISOString(),r.status==='ok'?'Uploaded':'Waiting'].map(q).join(','))).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='photo-records.csv';a.click();
+};
+$('#r_clear').onclick=async()=>{if(await ask('Clear the list?','This removes all records on this device, including photos still waiting to upload. Files in Drive stay.','Clear')){recs=[];saveRecs();renderRecords();renderRecent();}};
+
+/* ---------- start ---------- */
+apply();
+loadRemote().then(()=>{apply();});
+route();
+})();
+</script>
+</body>
+</html>
